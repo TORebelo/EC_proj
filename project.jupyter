@@ -1,0 +1,63 @@
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.impute import SimpleImputer
+from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+
+# Load the dataset
+data = pd.read_csv('data/custom_covid19.csv') 
+print("Data loaded with shape:", data.shape)
+
+# 1. Create target variable
+data['DIED'] = data['DATE_DIED'].apply(lambda x: 0 if x == '9999-99-99' else 1)
+
+# 2. Mark missing values
+data.replace([97, 98, 99], np.nan, inplace=True)
+
+# 3. Convert boolean columns (1=yes, 2=no → 1=yes, 0=no)
+bool_cols = ['INTUBED', 'PNEUMONIA', 'PREGNANT', 'DIABETES', 'COPD', 'ASTHMA', 
+             'INMSUPR', 'HYPERTENSION', 'OTHER_DISEASE', 'CARDIOVASCULAR', 
+             'OBESITY', 'RENAL_CHRONIC', 'TOBACCO', 'ICU']
+data[bool_cols] = data[bool_cols].replace(2, 0)
+
+# 4. Create COVID status feature
+data['COVID_POSITIVE'] = data['TEST_RESULT'].apply(lambda x: 1 if x in [1,2,3] else 0)
+
+# 5. Define features to keep/drop
+features_to_keep = ['USMER', 'MEDICAL_UNIT', 'SEX', 'PATIENT_TYPE', 
+                   'INTUBED', 'PNEUMONIA', 'AGE', 'DIABETES', 'COPD',
+                   'ASTHMA', 'INMSUPR', 'HYPERTENSION', 'OTHER_DISEASE',
+                   'CARDIOVASCULAR', 'OBESITY', 'RENAL_CHRONIC', 'TOBACCO',
+                   'ICU', 'COVID_POSITIVE']
+
+# 6. Separate features and target
+X = data[features_to_keep]
+y = data['DIED']
+
+# 7. Define preprocessing pipeline
+numeric_features = ['AGE']
+categorical_features = [col for col in features_to_keep if col not in numeric_features + ['DIED']]
+print("Numeric features:", numeric_features)
+print("Categorical features:", categorical_features)
+
+
+# Preprocessing for numeric features (scaling) and categorical features (imputation)
+# Define the preprocessing steps for numeric and categorical features
+preprocessor = ColumnTransformer(
+    transformers=[
+        ('num', StandardScaler(), numeric_features),
+        ('cat', SimpleImputer(strategy='most_frequent'), categorical_features)
+    ])
+
+# 8. Train-test split
+# Split the data into training and testing sets
+# Stratified split to maintain the same distribution of the target variable in both sets
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42, stratify=y)
+
+
+
+print(f"Training set: {X_train.shape}, Test set: {X_test.shape}")
+print(f"Class distribution (train): {pd.Series(y_train).value_counts(normalize=True)}")

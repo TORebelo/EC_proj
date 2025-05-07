@@ -2,10 +2,6 @@
 
 Engenharia do Conhecimento 2023/2024
 
-Dataset: An edited version of the Covid-19 Dataset from the Mexican government Database.
-
-DO NOT DOWNLOAD the Dataset from the UCI Repository - Use the edited version in this assignment (custom_covid19.csv)
-
 Objetives:
 
 O1.
